@@ -1,0 +1,32 @@
+{
+  "name": "perplex-tts",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Browser Twitch TTS.",
+  "main": "dist/perplex-tts.html",
+  "scripts": {
+    "build": "rimraf dist && parcel build src/perplex-tts.html --detailed-report",
+    "start": "npm run build && npm run python3-http-server",
+    "python3-http-server": "cd ./dist/ && python -m http.server",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Karar Al-Remahy",
+  "license": "MIT",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^3.8.0",
+    "@typescript-eslint/parser": "^3.8.0",
+    "eslint": "^7.6.0",
+    "eslint-config-standard": "^14.1.1",
+    "eslint-plugin-import": "^2.22.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.1",
+    "parcel": "^2.0.0-beta.1",
+    "rimraf": "^3.0.2",
+    "typescript": "^3.9.7"
+  },
+  "dependencies": {
+    "@types/node": "^14.0.27",
+    "dank-twitch-irc": "github:kararty/dank-twitch-irc"
+  }
+}

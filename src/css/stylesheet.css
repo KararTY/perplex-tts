@@ -1,0 +1,13 @@
+.transparency {
+  background-color: rgba(0, 0, 0, 0);
+}
+body {
+  margin: 0;
+}
+
+button {
+  height: 100vh;
+  width: 100vw;
+  font-size: 48px;
+  border: none;
+}
