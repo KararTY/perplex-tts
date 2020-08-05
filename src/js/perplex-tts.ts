@@ -75,7 +75,7 @@ function helpHotkey (evt: KeyboardEvent) {
         p.style.padding = '1rem'
         p.innerHTML = `Current channel: ${channel}`
         p.innerHTML += `<hr>Current prefix: ${commandPrefix}`
-        p.innerHTML += `<hr>Current lang: ${defaultVoiceByLang.lang}`
+        p.innerHTML += `<hr>Current lang: ${defaultVoiceByLang.lang.toLowerCase()} [${defaultVoiceByLang.name}]`
         p.innerHTML += '<hr>Available lang options:'
         p.innerHTML += `<br>${availableVoices.map(voice => `${voice.lang} [${voice.voice.name}]`).join('<br>')}`
         document.body.appendChild(p)
