@@ -2,6 +2,13 @@
 ## Browser Twitch TTS.
 **EXPERIMENTAL BROWSER SUPPORT:** MAY NOT WORK ON SAFARI OR OPERA.
 
+Work-around for newer Firefox versions:
+```
+ From version 61 until version 62 (exclusive):
+ this feature is behind the media.webspeech.synth.enabled preference (needs to be set to true).
+ To change preferences in Firefox, visit about:config.
+```
+
 **Note: Unfortunately this does NOT work in OBS's "Browser Source", as CEF (The Chromium engine) doesn't come with the required speech functionalities.**
 
 ### What it does
