@@ -1,14 +1,14 @@
 import { html, render } from 'uhtml'
-// eslint-disable-next-line no-unused-vars
 import { ChatClient, PrivmsgMessage, UsernoticeMessage, ClearmsgMessage, ClearchatMessage } from 'dank-twitch-irc'
 
 // This is a "Proof of Concept".
 
 interface Settings {
+  volume: number
   channel: string
   prefix: string
   channelPointsId: string
-  allow: string[]
+  allow: AllowTypes[]
   bits: number
   automod: {
     identity: boolean
@@ -33,7 +33,23 @@ interface Message {
   startedAt: Date
   sameMessage: boolean
   waitUntil: Date
+  volume: number
 }
+
+interface AvailableVoices {
+  default: boolean
+  lang: string
+  voice: SpeechSynthesisVoice
+}
+
+enum AllowTypes {
+  ANYONE = 'anyone',
+  TIERONE = 'tierone',
+  VIPS = 'vips',
+  MODS = 'mods'
+}
+
+const TTSREWARDMSG = '!TTS_REWARD'
 
 const client = new ChatClient({
   connection: {
@@ -42,19 +58,19 @@ const client = new ChatClient({
   }
 })
 
-function helpHotkey (evt: KeyboardEvent) {
+function helpHotkey (evt: KeyboardEvent): void {
   if ((evt.key === 'z' && evt.ctrlKey) || (evt.key === 'Z' && evt.ctrlKey)) {
-    document.getElementById('settings').classList.toggle('is-hidden')
-    document.getElementById('messages').classList.toggle('is-hidden')
+    (document.getElementById('settings') as HTMLDivElement).classList.toggle('is-hidden')
+    ;(document.getElementById('messages') as HTMLDivElement).classList.toggle('is-hidden')
   }
 }
 document.addEventListener('keyup', helpHotkey, false)
 
 let synth: SpeechSynthesis
-let availableVoices: { default: boolean, lang: string, voice: SpeechSynthesisVoice }[]
+let availableVoices: AvailableVoices[]
 let checks = 0
 let voicesLoaded = false
-function checkForVoices () {
+function checkForVoices (): void {
   synth = window.speechSynthesis
 
   if (synth.getVoices().length === 0) {
@@ -64,7 +80,14 @@ function checkForVoices () {
         checkForVoices()
       }, 50)
     } else {
-      console.error('Not supported.')
+      const node = html.node`
+        <p class="help is-danger" id="savebuttonhelp">
+          <span>There's been an error loading / saving your settings! Check the console logs for more information.</span>
+          <span>If you think it's a bug, report it on <a href="https://www.github.com/kararty/perplex-tts">Github</a>!</span>
+        </p>
+      `
+      node.setAttribute('class', 'is-size-4 has-text-danger')
+      ;((document.getElementById('settings') as HTMLDivElement).querySelector('.card-content') as HTMLDivElement).prepend(node)
     }
     return
   }
@@ -90,17 +113,26 @@ setTimeout(() => {
 })
 
 let hasClicked = false
-render(document.getElementById('enabletts'), html`
+render(document.getElementById('enabletts') as HTMLDivElement, html`
   <a class="button is-fullwidth is-danger" onclick="${() => {
-    document.getElementById('enabletts').remove()
+    (document.getElementById('enabletts') as HTMLDivElement).remove()
     hasClicked = true
   }}">Click here to enable TTS!</a>
 `)
 
-function renderSettings () {
-  render(document.getElementById('settings').querySelector('.card-content'), html`
+function renderSettings (): void {
+  render(((document.getElementById('settings') as HTMLDivElement).querySelector('.card-content') as HTMLDivElement), html`
     <p>Scroll down to save your settings!</p>
     <hr>
+    <div class="field">
+      <label class="label">Volume</label>
+      <div class="control">
+        <input class="slider is-fullwidth" type="range" min="0" step="0.01" max="1" value=${currentSettings.volume} id="volume" onchange="${function onChangeVolumeSlider (this: HTMLInputElement) {
+          (this.parentElement as HTMLDivElement).title = this.value
+        }}">
+        <p class="help">Default volume for TTS. Messages may only define lower values, and never higher than the one set above.</p>
+      </div>
+    </div>
     <div class="field">
       <label class="label">Twitch channel</label>
       <div class="control">
@@ -121,7 +153,7 @@ function renderSettings () {
         <input class="input" type="text" value=${currentSettings.channelPointsId} id="channelpointsid">
         <p class="help">
           <span>If your channel has points enabled, you can play TTS on a specified reward.</span>
-          <strong>Only works for mods/broadcaster:</strong> <span>Type "!TTS_REWARD" in the channel point reward message, to enable that channel reward to be read as TTS.</span>
+          <strong>Only works for mods/broadcaster:</strong> <span>Type "${TTSREWARDMSG}" in the channel point reward message, to enable that channel reward to be read as TTS.</span>
         </p>
       </div>
     </div>
@@ -131,44 +163,26 @@ function renderSettings () {
         <div class="columns is-multiline is-mobile">
           <div class="column is-narrow">
             <label>
-              <input type="checkbox" value="*" checked="${currentSettings.allow.includes('*') || undefined}" id="allowanyone" onclick="${onClickAllowAnyone}">
+              <input type="checkbox" value="${AllowTypes.ANYONE}" checked="${currentSettings.allow.includes(AllowTypes.ANYONE) || undefined}" id="${'allow' + AllowTypes.ANYONE}" onclick="${onClickAllowAnyone}">
               <span>Anyone</span>
             </label>
           </div>
           <div class="column is-narrow">
             <label>
-              <input type="checkbox" value="vip" checked="${currentSettings.allow.includes('vip') || undefined}" id="allowvip">
+              <input type="checkbox" value="${AllowTypes.VIPS}" checked="${currentSettings.allow.includes(AllowTypes.VIPS) || undefined}" id="${'allow' + AllowTypes.VIPS}">
               <span>VIP</span>
             </label>
           </div>
           <div class="column is-narrow">
             <label>
-              <input type="checkbox" value="mods" checked="${currentSettings.allow.includes('mods') || undefined}" id="allowmods">
+              <input type="checkbox" value="${AllowTypes.MODS}" checked="${currentSettings.allow.includes(AllowTypes.MODS) || undefined}" id="${'allow' + AllowTypes.MODS}">
               <span>Mods</span>
             </label>
           </div>
           <div class="column is-narrow">
             <label>
-              <input type="checkbox" value="tierone" checked="${currentSettings.allow.includes('tierone') || undefined}" id="allowtierone">
-              <span>Tier 1 Subscribers</span>
-            </label>
-          </div>
-          <div class="column is-narrow">
-            <label>
-              <input type="checkbox" value="tiertwo" checked="${currentSettings.allow.includes('tiertwo') || undefined}" id="allowtiertwo">
-              <span>Tier 2 Subscribers</span>
-            </label>
-          </div>
-          <div class="column is-narrow">
-            <label>
-              <input type="checkbox" value="tierthree" checked="${currentSettings.allow.includes('tierthree') || undefined}" id="allowtierthree">
-              <span>Tier 3 Subscribers</span>
-            </label>
-          </div>
-          <div class="column is-narrow">
-            <label>
-              <input type="checkbox" value="bits" checked="${currentSettings.allow.includes('bits') || undefined}" id="allowbits">
-              <span>Bits</span>
+              <input type="checkbox" value="${AllowTypes.TIERONE}" checked="${currentSettings.allow.includes(AllowTypes.TIERONE) || undefined}" id="${'allow' + AllowTypes.TIERONE}">
+              <span>Subscribers</span>
             </label>
           </div>
         </div>
@@ -179,7 +193,7 @@ function renderSettings () {
       <label class="label">Bits</label>
       <div class="control">
         <input class="input" type="number" min="0" value=${currentSettings.bits} id="bits">
-        <p class="help">If you've allowed bits to be read out, enter the minimum amount of bits to trigger TTS.</p>
+        <p class="help">If you set the value above 0, this will enable TTS on bits if the minimum amount of bits is cheered.</p>
       </div>
     </div>
     <div class="field">
@@ -211,7 +225,7 @@ function renderSettings () {
             </label>
           </div>
         </div>
-        <p class="help">Disable certain messages as outlined by <a href="https://help.twitch.tv/s/article/how-to-use-automod">Twitch's Automod</a> feature. <strong>Note: This isn't completely reliable.</strong></p>
+        <p class="help">Censor words as outlined by <a href="https://help.twitch.tv/s/article/how-to-use-automod">Twitch's Automod</a> feature. <strong>Note: This isn't completely reliable.</strong></p>
       </div>
     </div>
     <div class="field">
@@ -241,7 +255,7 @@ function renderSettings () {
         <div class="tags" id="voices">
           ${availableVoices.map((voice) => html`
             <a class="${(currentSettings.langName === voice.voice.name ? 'is-success ' : '') + 'tag'}" data-langname="${voice.voice.name}" onclick="${function clickedLang (this: HTMLAnchorElement) {
-              document.getElementById('voices').querySelector('.is-success[data-langname]').classList.remove('is-success')
+              ((document.getElementById('voices') as HTMLDivElement).querySelector('.is-success[data-langname]') as HTMLDivElement).classList.remove('is-success')
 
               this.classList.add('is-success')
             }}"><span><strong>${voice.lang}</strong></span> <span>[${voice.voice.name}]</span></a>
@@ -257,34 +271,29 @@ function renderSettings () {
     </div>
   `)
 
-  onClickAllowAnyone.bind(document.getElementById('allowanyone'))()
+  onClickAllowAnyone.bind(document.getElementById('allowanyone') as HTMLInputElement)()
 }
 
-function onClickAllowAnyone (this: HTMLInputElement) {
+function onClickAllowAnyone (this: HTMLInputElement): void {
   if (this.checked) {
-    document.getElementById('allowvip').parentElement.parentElement.classList.add('is-hidden')
-    document.getElementById('allowmods').parentElement.parentElement.classList.add('is-hidden')
-    document.getElementById('allowtierone').parentElement.parentElement.classList.add('is-hidden')
-    document.getElementById('allowtiertwo').parentElement.parentElement.classList.add('is-hidden')
-    document.getElementById('allowtierthree').parentElement.parentElement.classList.add('is-hidden')
-    document.getElementById('allowbits').parentElement.parentElement.classList.add('is-hidden')
+    (((document.getElementById('allow' + AllowTypes.VIPS) as HTMLInputElement).parentElement as Element).parentElement as Element).classList.add('is-hidden')
+    ;(((document.getElementById('allow' + AllowTypes.MODS) as HTMLInputElement).parentElement as Element).parentElement as Element).classList.add('is-hidden')
+    ;(((document.getElementById('allow' + AllowTypes.TIERONE) as HTMLInputElement).parentElement as Element).parentElement as Element).classList.add('is-hidden')
   } else {
-    document.getElementById('allowvip').parentElement.parentElement.classList.remove('is-hidden')
-    document.getElementById('allowmods').parentElement.parentElement.classList.remove('is-hidden')
-    document.getElementById('allowtierone').parentElement.parentElement.classList.remove('is-hidden')
-    document.getElementById('allowtiertwo').parentElement.parentElement.classList.remove('is-hidden')
-    document.getElementById('allowtierthree').parentElement.parentElement.classList.remove('is-hidden')
-    document.getElementById('allowbits').parentElement.parentElement.classList.remove('is-hidden')
+    (((document.getElementById('allow' + AllowTypes.VIPS) as HTMLInputElement).parentElement as Element).parentElement as Element).classList.remove('is-hidden')
+    ;(((document.getElementById('allow' + AllowTypes.MODS) as HTMLInputElement).parentElement as Element).parentElement as Element).classList.remove('is-hidden')
+    ;(((document.getElementById('allow' + AllowTypes.TIERONE) as HTMLInputElement).parentElement as Element).parentElement as Element).classList.remove('is-hidden')
   }
 }
 
 let defaultVoiceByLang: SpeechSynthesisVoice
 let currentSettings: Settings = {
+  volume: 1,
   channel: '',
   prefix: '',
   channelPointsId: '',
   bits: 0,
-  allow: ['*'],
+  allow: [AllowTypes.ANYONE],
   automod: {
     identity: true,
     sexual: true,
@@ -296,24 +305,18 @@ let currentSettings: Settings = {
   delay: 1,
   langName: ''
 }
-const urlParams = new URLSearchParams(window.location.search)
-function loadSettings () {
+function loadSettings (): void {
   const savedSettings = localStorage.getItem('perplex-tts.settings')
 
   try {
     if (savedSettings === null) {
-      const lang = urlParams.get('lang') ? decodeURIComponent(urlParams.get('lang')).toLowerCase() : null
+      defaultVoiceByLang = (availableVoices.find((voice) => voice.default) as AvailableVoices).voice
 
-      defaultVoiceByLang = typeof lang === 'string'
-        ? availableVoices.find((voice) => voice.lang === lang)
-          ? availableVoices.find((voice) => voice.lang === lang).voice
-          : availableVoices.find((voice) => voice.default).voice
-        : availableVoices.find((voice) => voice.default).voice
-
-      const settingsToSave: Settings = {
-        channel: urlParams.get('channel') || 'notkarar',
+      const defaultSettings: Settings = {
+        volume: 1,
+        channel: 'notkarar',
         channelPointsId: '',
-        allow: ['*'],
+        allow: [AllowTypes.ANYONE],
         bits: 0,
         automod: {
           identity: true,
@@ -321,21 +324,21 @@ function loadSettings () {
           aggressive: true,
           profanity: true
         },
-        prefix: typeof urlParams.get('prefix') === 'string' ? `${decodeURIComponent(urlParams.get('prefix'))}` : '!tts',
+        prefix: '!tts',
         cooldown: 10,
         delay: 1,
         wait: 10,
         langName: defaultVoiceByLang.name
       }
 
-      saveSettings(settingsToSave)
+      saveSettings(defaultSettings)
     } else {
       // Load settings
       const res = JSON.parse(savedSettings) as Settings
       currentSettings = res
-      defaultVoiceByLang = availableVoices.find((voice) => voice.voice.name === currentSettings.langName).voice
+      defaultVoiceByLang = (availableVoices.find((voice) => voice.voice.name === currentSettings.langName) as AvailableVoices).voice
 
-      const prom = []
+      const prom: Array<Promise<any>> = []
 
       client.joinedChannels.forEach((channelName) => {
         prom.push(client.part(channelName))
@@ -343,16 +346,16 @@ function loadSettings () {
 
       Promise.all(prom).then(() => [
         client.join(currentSettings.channel)
-      ])
+      ]).catch(console.error)
 
       renderSettings()
 
       const saveButtonHelp = document.getElementById('savebuttonhelp')
       if (saveButtonHelp === null) {
         // renderSettings() will make "savebutton" available.
-        document.getElementById('savebutton').parentElement.appendChild(html.node`<p class="help" id="savebuttonhelp">Saved your settings!</p>`)
+        ((document.getElementById('savebutton') as HTMLButtonElement).parentElement as Element).appendChild(html.node`<p class="help" id="savebuttonhelp">Saved your settings!</p>`)
         setTimeout(() => {
-          document.getElementById('savebuttonhelp').remove()
+          (document.getElementById('savebuttonhelp') as HTMLParagraphElement).remove()
         }, 3000)
       }
     }
@@ -366,31 +369,29 @@ function loadSettings () {
       </p>
     `
     if (btnEl !== null) {
-      btnEl.parentElement.appendChild(node)
+      (btnEl.parentElement as Element).appendChild(node)
     } else {
       node.setAttribute('class', 'is-size-4 has-text-danger')
-      document.getElementById('settings').querySelector('.card-content').prepend(node)
+      ;((document.getElementById('settings') as HTMLDivElement).querySelector('.card-content') as HTMLDivElement).prepend(node)
     }
   }
 }
 
-function saveSettings (data: MouseEvent | Settings) {
-  let settingsToSave: Settings
+function saveSettings (data: MouseEvent | Settings): void {
+  let settingsToSave: Settings | undefined
 
   if (data instanceof MouseEvent) {
     settingsToSave = {
+      volume: (document.getElementById('volume') as HTMLInputElement).valueAsNumber,
       channel: (document.getElementById('channel') as HTMLInputElement).value,
       prefix: (document.getElementById('prefix') as HTMLInputElement).value,
       channelPointsId: (document.getElementById('channelpointsid') as HTMLInputElement).value,
       allow: [
-        document.getElementById('allowanyone'),
-        document.getElementById('allowvip'),
-        document.getElementById('allowmods'),
-        document.getElementById('allowtierone'),
-        document.getElementById('allowtiertwo'),
-        document.getElementById('allowtierthree'),
-        document.getElementById('allowbits')
-      ].filter((checkbox: HTMLInputElement) => checkbox.checked).map((checkbox: HTMLInputElement) => checkbox.value),
+        document.getElementById('allow' + AllowTypes.ANYONE) as HTMLInputElement,
+        document.getElementById('allow' + AllowTypes.VIPS) as HTMLInputElement,
+        document.getElementById('allow' + AllowTypes.MODS) as HTMLInputElement,
+        document.getElementById('allow' + AllowTypes.TIERONE) as HTMLInputElement
+      ].filter((checkbox: HTMLInputElement) => checkbox.checked).map((checkbox: HTMLInputElement) => checkbox.value as AllowTypes),
       bits: (document.getElementById('bits') as HTMLInputElement).valueAsNumber,
       automod: {
         identity: (document.getElementById('automodidentity') as HTMLInputElement).checked,
@@ -401,90 +402,99 @@ function saveSettings (data: MouseEvent | Settings) {
       cooldown: (document.getElementById('cooldown') as HTMLInputElement).valueAsNumber,
       delay: (document.getElementById('delay') as HTMLInputElement).valueAsNumber,
       wait: (document.getElementById('wait') as HTMLInputElement).valueAsNumber,
-      langName: (document.getElementById('voices').querySelector('.is-success[data-langname]') as HTMLAnchorElement).dataset.langname
+      langName: ((document.getElementById('voices') as HTMLInputElement).querySelector('.is-success[data-langname]') as HTMLAnchorElement).dataset.langname as string
     }
   } else if (typeof data.channel !== 'undefined') {
     // Save settings
     settingsToSave = data
   }
 
-  localStorage.setItem('perplex-tts.settings', JSON.stringify(settingsToSave))
+  if (typeof settingsToSave !== 'undefined') {
+    localStorage.setItem('perplex-tts.settings', JSON.stringify(settingsToSave))
+  }
 
   loadSettings()
 }
 
 let messagesToRead: Message[] = []
 let currentDelay: Date = new Date()
-function parseMessage (msg: PrivmsgMessage | UsernoticeMessage) {
-  const nowDate = new Date()
-  if (!msg.messageText.startsWith(currentSettings.prefix) ||
-    !voicesLoaded ||
-    !hasClicked ||
-    currentDelay.getTime() > nowDate.getTime()) {
-    return
-  }
-
+function parseMessage (msg: PrivmsgMessage | UsernoticeMessage): void {
   try {
-    let messageText = msg.messageText.substring(currentSettings.prefix.length)
+    if (msg.messageText === TTSREWARDMSG && (msg.isMod || msg.badges.hasBroadcaster) && msg.ircTags['custom-reward-id'] != null) {
+      currentSettings.channelPointsId = msg.ircTags['custom-reward-id']
+      saveSettings(currentSettings)
+      return
+    }
 
-    // Check "allowed" status.
+    const nowDate = new Date()
+    if (!voicesLoaded || !hasClicked || currentDelay.getTime() > nowDate.getTime()) {
+      return
+    }
+
+    let messageText = msg.messageText as string
+
+    // Logic to see if message should be read out.
     let allow = true
-    if (!currentSettings.allow.includes('*')) {
+
+    if (!currentSettings.allow.includes(AllowTypes.ANYONE)) {
       allow = false
-      // Is the user a VIP?
-      if (currentSettings.allow.includes('vip')) {
-        allow = msg.badges.hasVIP
-      }
-
-      // Is the user a Mod?
-      if (currentSettings.allow.includes('mod')) {
-        allow = msg.badges.hasModerator || msg.badgeInfo.hasAdmin || msg.badgeInfo.hasGlobalMod || msg.badgeInfo.hasStaff
-      }
-
-      // Is the user a Tier 1 Subscriber?
-      if (currentSettings.allow.includes('tierone')) {
-        allow = msg.badges.hasSubscriber
-      }
-
-      // Is the user a Tier 2 Subscriber?
-      if (currentSettings.allow.includes('tiertwo')) {
-        allow = msg.badges.hasSubscriber // TODO FIX
-      }
-
-      // Is the user a Tier 3 Subscriber?
-      if (currentSettings.allow.includes('tierthree')) {
-        allow = msg.badges.hasSubscriber // TODO FIX
-      }
-
-      // Did the user add bits?
-      if (currentSettings.allow.includes('bits')) {
-        allow = msg.bits > currentSettings.bits
+      for (let index = 0; index < currentSettings.allow.length; index++) {
+        const allowedEl = currentSettings.allow[index]
+        if (allowedEl === AllowTypes.VIPS) {
+          allow = msg.badges.hasVIP
+          break
+        } else if (allowedEl === AllowTypes.MODS) {
+          allow = msg.badges.hasBroadcaster || msg.badges.hasModerator || msg.badgeInfo.hasAdmin || msg.badgeInfo.hasGlobalMod || msg.badgeInfo.hasStaff
+          break
+        } else if (allowedEl === AllowTypes.TIERONE) {
+          allow = msg.badges.hasSubscriber
+        }
       }
     }
 
-    // Don't parse message.
+    /**
+     * If the above checks returned true, then check if message has a prefix.
+     * Messages do not need the prefix if bits or channel points id is enabled.
+     */
+    allow = (allow && messageText.startsWith(currentSettings.prefix))
+
+    // If all checks returned false, then check if the user added bits?
+    const bits = typeof msg.bits === 'number' ? msg.bits : 0
+    if (!allow && currentSettings.bits > 0 && bits > 0) {
+      allow = bits >= currentSettings.bits
+    }
+
+    // Check if message is requested through a Channel Point Reward.
+    if (currentSettings.channelPointsId.length > 0 && typeof msg.ircTags['custom-reward-id'] !== 'undefined') {
+      if (currentSettings.channelPointsId === msg.ircTags['custom-reward-id']) {
+        allow = true
+      }
+    }
+
+    // Don't parse the message.
     if (!allow) {
       return
     }
 
-    // Check if message is requested through a Channel Point Reward.
-    if (currentSettings.channelPointsId.length > 0) {
-      // msg.ircTags // TODO FIX
+    if (messageText.startsWith(currentSettings.prefix)) {
+      messageText = messageText.substring(currentSettings.prefix.length)
     }
 
+    console.log(msg.flags)
+
     // Filter bad words.
-    if (msg.flags != null) {
+    if (msg.flags instanceof Array) {
       for (let index = 0; index < msg.flags.length; index++) {
         const flag = msg.flags[index]
         let censor = false
 
-        if (currentSettings.automod.identity && !!flag.categories.find((category) => category.category === 'I')) {
+        if (currentSettings.automod.identity && typeof flag.categories.find((category) => category.category === 'I') !== 'undefined') {
           censor = true
-        } else if (currentSettings.automod.sexual && !!flag.categories.find((category) => category.category === 'S')) {
+        } else if (currentSettings.automod.sexual && typeof flag.categories.find((category) => category.category === 'S') !== 'undefined') {
           censor = true
-        } else if (currentSettings.automod.aggressive && !!flag.categories.find((category) => category.category === 'A')) {
+        } else if (currentSettings.automod.aggressive && typeof flag.categories.find((category) => category.category === 'A') !== 'undefined') {
           censor = true
-        } else if (currentSettings.automod.profanity && !!flag.categories.find((category) => category.category === 'P')) {
+        } else if (currentSettings.automod.profanity && typeof flag.categories.find((category) => category.category === 'P') !== 'undefined') {
           censor = true
         }
 
@@ -495,7 +505,7 @@ function parseMessage (msg: PrivmsgMessage | UsernoticeMessage) {
     }
 
     // Don't try to parse empty messages.
-    if (messageText.length < 0) {
+    if (messageText.trim().length === 0) {
       return
     }
 
@@ -513,7 +523,8 @@ function parseMessage (msg: PrivmsgMessage | UsernoticeMessage) {
         pitch: 1,
         startedAt: new Date(),
         sameMessage: false,
-        waitUntil: new Date(Date.now() + currentSettings.wait * 1000)
+        waitUntil: new Date(Date.now() + currentSettings.wait * 1000),
+        volume: currentSettings.volume
       }
     ]
 
@@ -523,15 +534,17 @@ function parseMessage (msg: PrivmsgMessage | UsernoticeMessage) {
       const requestsLangRegexp = word.match(/lang:[\w-]+/)
       const requestsRateRegexp = word.match(/rate:[0-2](?:\.[5-9])?/)
       const requestsPitchRegexp = word.match(/pitch:[0-2](?:\.[0-9])?/)
+      const requestsVolumeRegexp = word.match(/volume:[0-1](?:\.[0-9])?/)
 
       let voice = messages[currentMessagesIndex].voice
       let rate = messages[currentMessagesIndex].rate
       let pitch = messages[currentMessagesIndex].pitch
+      let volume = messages[currentMessagesIndex].volume
 
       if (requestsLangRegexp !== null) {
-        const requestedLangInMsg = requestsLangRegexp[0].split(':').pop()
+        const requestedLangInMsg = requestsLangRegexp[0].split(':').pop() as string
         const foundLang = availableVoices.find((voice) => voice.lang === requestedLangInMsg.toLowerCase())
-        voice = foundLang ? foundLang.voice : defaultVoiceByLang
+        voice = typeof foundLang !== 'undefined' ? foundLang.voice : defaultVoiceByLang
 
         if (messages[currentMessagesIndex].text.length === 0) {
           messages[currentMessagesIndex].voice = voice
@@ -553,6 +566,16 @@ function parseMessage (msg: PrivmsgMessage | UsernoticeMessage) {
           messages[currentMessagesIndex].pitch = pitch
           continue
         }
+      } else if (requestsVolumeRegexp !== null) {
+        const number = Number(requestsVolumeRegexp[0].split(':').pop())
+        volume = currentSettings.volume > 0
+          ? (number <= 0.01 ? 0.01 : number > currentSettings.volume ? currentSettings.volume : number)
+          : 0
+
+        if (messages[currentMessagesIndex].text.length === 0) {
+          messages[currentMessagesIndex].volume = volume
+          continue
+        }
       } else {
         messages[currentMessagesIndex].text += ` ${word}`
         messages[currentMessagesIndex].text = messages[currentMessagesIndex].text.trim()
@@ -569,7 +592,8 @@ function parseMessage (msg: PrivmsgMessage | UsernoticeMessage) {
         pitch,
         startedAt: new Date(),
         sameMessage: true,
-        waitUntil: new Date(Date.now() + currentSettings.wait * 1000)
+        waitUntil: new Date(Date.now() + currentSettings.wait * 1000),
+        volume
       })
     }
 
@@ -586,9 +610,9 @@ function parseMessage (msg: PrivmsgMessage | UsernoticeMessage) {
   }
 }
 
-function deleteMessage (msg: ClearmsgMessage | ClearchatMessage | { targetMessageID: string }) {
-  if (msg instanceof ClearmsgMessage || (!(msg instanceof ClearchatMessage) && msg.targetMessageID)) {
-    if (msg.targetMessageID) {
+function deleteMessage (msg: ClearmsgMessage | ClearchatMessage | { targetMessageID: string }): void {
+  if (msg instanceof ClearmsgMessage || (!(msg instanceof ClearchatMessage) && typeof msg.targetMessageID === 'string')) {
+    if (typeof msg.targetMessageID === 'string') {
       // Stop &/ Delete message.
       if (typeof currentlySpeaking !== 'undefined' && currentlySpeaking.messageID === msg.targetMessageID) {
         currentlySpeaking = undefined
@@ -598,7 +622,7 @@ function deleteMessage (msg: ClearmsgMessage | ClearchatMessage | { targetMessag
       messagesToRead = messagesToRead.filter((message) => message.messageID !== msg.targetMessageID)
     }
   } else if (msg instanceof ClearchatMessage) {
-    if (msg.targetUsername) {
+    if (typeof msg.targetUsername !== 'undefined') {
       // Stop &/ Delete all messages by user.
       if (typeof currentlySpeaking !== 'undefined' && currentlySpeaking.userID === msg.targetUsername) {
         currentlySpeaking = undefined
@@ -616,28 +640,28 @@ function deleteMessage (msg: ClearmsgMessage | ClearchatMessage | { targetMessag
   renderMessageQueue()
 }
 
-function addGreenBorder () {
-  const div = (document.getElementById('messages').querySelector('.card-content').querySelector('.box') as HTMLDivElement)
+function addGreenBorder (): void {
+  const div = (((document.getElementById('messages') as HTMLDivElement).querySelector('.card-content') as HTMLDivElement).querySelector('.box') as HTMLDivElement)
 
   if (div !== null) {
     div.classList.add('currently-reading-message')
   }
 }
 
-function removeGreenBorder () {
-  const div = (document.getElementById('messages').querySelector('.card-content').querySelector('.box') as HTMLDivElement)
+function removeGreenBorder (): void {
+  const div = (((document.getElementById('messages') as HTMLDivElement).querySelector('.card-content') as HTMLDivElement).querySelector('.box') as HTMLDivElement)
 
   if (div !== null) {
     div.classList.remove('currently-reading-message')
   }
 }
 
-let currentlySpeaking: Message
+let currentlySpeaking: Message | undefined
 let killInterval: NodeJS.Timeout
-function speakMessage () {
+function speakMessage (): void {
   renderMessageQueue()
   if (messagesToRead.length > 0 && !synth.speaking && Date.now() > messagesToRead[0].waitUntil.getTime()) {
-    const message = messagesToRead.shift()
+    const message = messagesToRead.shift() as Message
 
     if (message.text.length > 0) {
       const utterance = new SpeechSynthesisUtterance(message.text)
@@ -667,6 +691,7 @@ function speakMessage () {
       utterance.voice = message.voice
       utterance.pitch = message.pitch
       utterance.rate = message.rate
+      utterance.volume = message.volume
 
       currentlySpeaking.startedAt = new Date()
       synth.speak(utterance)
@@ -701,19 +726,19 @@ function speakMessage () {
 
 speakMessage()
 
-function renderMessageQueue () {
-  const messagesArr = [currentlySpeaking, ...messagesToRead].filter(Boolean)
+function renderMessageQueue (): void {
+  const messagesArr = [currentlySpeaking, ...messagesToRead].filter(Boolean) as Message[]
 
-  render(document.getElementById('messages').querySelector('.card-content'), html`
+  render((document.getElementById('messages') as HTMLDivElement).querySelector('.card-content') as HTMLDivElement, html`
     <p>Click on a message to delete it from queue!</p>
     <hr>
     ${messagesArr.length > 0 ? messagesArr.map((message) => html`
       <div class="box" data-messageid="${message.messageID}" onclick="${function clickedOnMessageBox (this: HTMLDivElement) {
-        deleteMessage({ targetMessageID: this.dataset.messageid })
+        deleteMessage({ targetMessageID: this.dataset.messageid as string })
       }}">
         <span>By <strong>${message.username}</strong></span>
         <br><span><strong>Text to read out:</strong> ${message.text}</span>
-        <br><span><strong>Details:</strong> Pitch:${message.pitch}, Rate:${message.rate}, Synthesizer:${message.voice.name}</span>
+        <br><span><strong>Details:</strong> Volume: ${message.volume}, Pitch: ${message.pitch}, Rate: ${message.rate}, Synthesizer: ${message.voice.name}</span>
       </div>
     `) : undefined}
   `)

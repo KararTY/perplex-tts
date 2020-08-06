@@ -34,6 +34,9 @@ $family-sans-serif: 'Roobert Regular', 'Roobert', 'Helvetica Neue', Helvetica, A
 
 @import "../node_modules/bulma/sass/form/_all.sass";
 
+/*! bulma-slider v2.0.4 | MIT License | github.com/Wikiki/bulma-slider */
+@import "./slider.sass";
+
 .transparency {
   background-color: rgba(0, 0, 0, 0);
 }

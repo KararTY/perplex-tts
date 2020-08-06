@@ -39,15 +39,15 @@ Plays messages, written in the specified channel with a specific prefix, with a 
 
 ### What it uses
   * [dank-twitch-irc](https://github.com/robotty/dank-twitch-irc) for retrieving Twitch messages.
-  * [bulma.css](https://github.com/jgthms/bulma) for the styling.
+  * [uHTML](https://github.com/WebReflection/uhtml) for rendering HTML templates.
+  * [Bulma](https://github.com/jgthms/bulma) for the styling.
   * [node-sass](https://github.com/sass/node-sass) for stylesheet management.
   * [Parcel 2](https://github.com/parcel-bundler/parcel/) for packing the files for use in the browser.
   * [SpeechSynthesis Browser API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API/Using_the_Web_Speech_API#Speech_synthesis) for the speech synthesis. No external APIs used here.
 
 ### TODO:
-  * Implement "channel points reward redemption" feature.
-  * Implement "allow" for tier 2, 3 subscribers.
+  * Allow TTS voices to be renamed.
 
 ### Ideas for the future
-  * Not requiring the user to click on the big button to make it work.
+  * Not requiring the user to click on the big red button to make it work.
   * Make it work in OBS.
