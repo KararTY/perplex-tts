@@ -93,10 +93,10 @@ function checkForVoices (): void {
   }
 
   if (!voicesLoaded) {
-    availableVoices = synth.getVoices().map((voice, index, arr) => {
+    availableVoices = synth.getVoices().sort(a => (a.lang === 'en-GB' && a.name.startsWith('Microsoft')) ? -1 : 1).sort(x => x.default ? -1 : 1).map((voice, index, arr) => {
       const duplicateLangsBefore = arr.slice(0, index).filter((v) => v.lang === voice.lang).length
       return {
-        default: voice.default,
+        default: index === 0,
         lang: duplicateLangsBefore > 0 ? `${voice.lang.toLowerCase()}-${duplicateLangsBefore + 1}` : voice.lang.toLowerCase(),
         voice
       }
@@ -479,8 +479,6 @@ function parseMessage (msg: PrivmsgMessage | UsernoticeMessage): void {
     if (messageText.startsWith(currentSettings.prefix)) {
       messageText = messageText.substring(currentSettings.prefix.length)
     }
-
-    console.log(msg.flags)
 
     // Filter bad words.
     if (msg.flags instanceof Array) {
