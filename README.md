@@ -9,24 +9,25 @@ Plays messages, written in the specified channel with a specific prefix, with a 
 [Video showcase.](https://streamable.com/e4q6fp)
 
 ### How to try it out
-  1. Browse to https://alremahy.com/perplex-tts.html?channel=notkarar&prefix=!tts&lang=en-us
-  2. Join the [NotKarar](https://www.twitch.tv/notkarar) Twitch channel.
-  3. Type a message prefixed by `!tts `, like so `!tts Hello world!`.
+  1. Browse to https://alremahy.com/perplex-tts.html
+  2. Change the default values.
+  3. Click on save settings.
+  4. Click on "Click here to enable TTS!".
+  5. Join the provided Twitch channel.
+  6. Type a message prefixed by the command prefix, if you left the value as default then type like so `!tts Hello world!`.
 
-By changing the `?channel=<channel_name_goes_here>` part of the url, you connect to the specified streamer's chat.
+### How to use it
+  * Adding `lang:xx-xx` before the text will change which language and/or synthesizer it will use.
+  * Adding `rate:0.5` to `rate:2` will change how fast it reads a message. Input: Float value from 0.5, 0.6, etc... to a maximum value of 2.
+  * Adding `pitch:0` to `pitch:2` will change the pitch of the synthesizer. Input: Float value from 0, 0.1, etc... to a maximum value of 2.
 
-Changing the `&prefix=<prefix_goes_here>` part of the url will let you decide what to use as the prefix.
-
-Changing the `&lang=<locale-goes-here>` part of the url will let you decide the default language / speech synthesizer for messages.
-
-You can get a list of supported languages by your browser by pressing `CTRL+Z`, in the website, on your keyboard.
-
-That's pretty much it.
-
-### What it uses
-  * [dank-twitch-irc](https://github.com/robotty/dank-twitch-irc) for retrieving Twitch messages.
-  * [Parcel 2](https://github.com/parcel-bundler/parcel/) for packing the files for use in the browser.
-  * [SpeechSynthesis Browser API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API/Using_the_Web_Speech_API#Speech_synthesis) for the speech synthesis. No external APIs used here.
+### How to get more TTS voices
+  * Install TTS voices via Windows 10 settings:
+    <p align="center">
+      <img src="./Language_Settings.png"/>
+      <br>Make sure they have the "Text-To-Speech" icon that looks like this 👉 <img src="TTS_Icon.png"/> before installing them. <strong>Also, you may be required to restart your PC after installing new languages.</strong>
+    </p>
+  * Other ways of getting TTS: Not sure. Maybe you know of some?
 
 ### How to build it yourself
   1. Make sure you have NodeJS (Latest LTS works).
@@ -36,7 +37,17 @@ That's pretty much it.
   * For testing purposes you can try it out locally with python3:
     * `npm run python3-http-server`
 
+### What it uses
+  * [dank-twitch-irc](https://github.com/robotty/dank-twitch-irc) for retrieving Twitch messages.
+  * [bulma.css](https://github.com/jgthms/bulma) for the styling.
+  * [node-sass](https://github.com/sass/node-sass) for stylesheet management.
+  * [Parcel 2](https://github.com/parcel-bundler/parcel/) for packing the files for use in the browser.
+  * [SpeechSynthesis Browser API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API/Using_the_Web_Speech_API#Speech_synthesis) for the speech synthesis. No external APIs used here.
+
+### TODO:
+  * Implement "channel points reward redemption" feature.
+  * Implement "allow" for tier 2, 3 subscribers.
+
 ### Ideas for the future
   * Not requiring the user to click on the big button to make it work.
-  * Enable / Disable AutoMod filter (IDENTITY, AGGRESSIVE, SEXUAL, PROFANITY).
   * Make it work in OBS.
