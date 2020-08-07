@@ -51,13 +51,6 @@ enum AllowTypes {
 
 const TTSREWARDMSG = '!TTS_REWARD'
 
-const client = new ChatClient({
-  connection: {
-    type: 'websocket',
-    secure: true
-  }
-})
-
 function helpHotkey (evt: KeyboardEvent): void {
   if ((evt.key === 'z' && evt.ctrlKey) || (evt.key === 'Z' && evt.ctrlKey)) {
     (document.getElementById('settings') as HTMLDivElement).classList.toggle('is-hidden')
@@ -101,8 +94,6 @@ function checkForVoices (): void {
         voice
       }
     }).sort((a, b) => a.lang.localeCompare(b.lang))
-
-    loadSettings()
   }
 
   voicesLoaded = true
@@ -340,13 +331,22 @@ function loadSettings (): void {
 
       const prom: Array<Promise<any>> = []
 
-      client.joinedChannels.forEach((channelName) => {
-        prom.push(client.part(channelName))
-      })
+      if (typeof client !== 'undefined') {
+        client.joinedChannels.forEach((channelName) => {
+          console.log(`Disconnecting from Twitch channel ${channelName}...`)
+          if (typeof client !== 'undefined') {
+            prom.push(client.part(channelName))
+          }
+        })
 
-      Promise.all(prom).then(() => [
-        client.join(currentSettings.channel)
-      ]).catch(console.error)
+        Promise.all(prom).then(() => {
+          if (typeof client !== 'undefined') {
+            client.join(currentSettings.channel)
+              .then(() => console.log('Joined Twitch channel', currentSettings.channel))
+              .catch(console.error)
+          }
+        }).catch(console.error)
+      }
 
       renderSettings()
 
@@ -355,7 +355,10 @@ function loadSettings (): void {
         // renderSettings() will make "savebutton" available.
         ((document.getElementById('savebutton') as HTMLButtonElement).parentElement as Element).appendChild(html.node`<p class="help" id="savebuttonhelp">Saved your settings!</p>`)
         setTimeout(() => {
-          (document.getElementById('savebuttonhelp') as HTMLParagraphElement).remove()
+          const helpParagraph = document.getElementById('savebuttonhelp')
+          if (helpParagraph !== null) {
+            helpParagraph.remove()
+          }
         }, 3000)
       }
     }
@@ -779,21 +782,60 @@ function renderMessageQueue (): void {
 
 setInterval(() => renderMessageQueue())
 
-client.on('372', (msg) => console.log(`Twitch IRC: ${msg.ircParameters.join(' ')}`))
-client.on('ready', () => console.log('Successfully connected to Twitch IRC.'))
-
-client.on('PRIVMSG', parseMessage)
-client.on('USERNOTICE', parseMessage)
-
-client.on('CLEARMSG', deleteMessage)
-client.on('CLEARCHAT', deleteMessage)
-
-client.on('close', (error) => {
-  if (error != null) {
-    console.error('Client closed due to error', error)
+let killClientCounter: number = 0
+let client: ChatClient | undefined
+function addEventListeners (): void {
+  killClientCounter = 0
+  if (typeof client !== 'undefined') {
+    client.removeAllListeners()
+    client = undefined
   }
 
-  client.connect()
-})
+  client = new ChatClient({
+    connection: {
+      type: 'websocket',
+      secure: true
+    }
+  })
 
-client.connect()
+  client.on('372', (msg) => console.log(`Twitch IRC: ${msg.ircParameters.join(' ')}`))
+  client.on('ready', () => {
+    console.log('Successfully connected to Twitch IRC.')
+    loadSettings()
+  })
+
+  client.on('PRIVMSG', parseMessage)
+  client.on('USERNOTICE', parseMessage)
+
+  client.on('CLEARMSG', deleteMessage)
+  client.on('CLEARCHAT', deleteMessage)
+
+  client.on('error', (error) => {
+    if (error != null) {
+      console.error('Client error', error)
+    }
+  })
+
+  client.connect()
+}
+
+setInterval(() => {
+  if (typeof client !== 'undefined') {
+    if (client.joinedChannels.size === 0) {
+      killClientCounter++
+
+      if (killClientCounter > 1) {
+        render(((document.getElementById('settings') as HTMLDivElement).querySelector('.card-content') as HTMLDivElement), html`
+          <p>Attempting to reconnect to Twitch chat in ${10 - killClientCounter} seconds...</p>
+        `)
+      }
+
+      if (killClientCounter > 9) {
+        // Attempt reconnection.
+        addEventListeners()
+      }
+    }
+  } else {
+    addEventListeners()
+  }
+}, 1000)
