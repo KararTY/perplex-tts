@@ -824,7 +824,7 @@ setInterval(() => {
     if (client.joinedChannels.size === 0) {
       killClientCounter++
 
-      if (killClientCounter > 1) {
+      if (killClientCounter > 4) {
         render(((document.getElementById('settings') as HTMLDivElement).querySelector('.card-content') as HTMLDivElement), html`
           <p>Attempting to reconnect to Twitch chat in ${10 - killClientCounter} seconds...</p>
         `)
