@@ -54,3 +54,7 @@ $family-sans-serif: 'Roobert Regular', 'Roobert', 'Helvetica Neue', Helvetica, A
   border-color: $green;
   border-style: solid;
 }
+
+.break-word {
+  word-break: break-all;
+}

@@ -1,5 +1,5 @@
+import { ChatClient, ClearchatMessage, ClearmsgMessage, PrivmsgMessage, UsernoticeMessage } from 'dank-twitch-irc'
 import { html, render } from 'uhtml'
-import { ChatClient, PrivmsgMessage, UsernoticeMessage, ClearmsgMessage, ClearchatMessage } from 'dank-twitch-irc'
 
 // This is a "Proof of Concept".
 
@@ -752,7 +752,7 @@ function speakMessage (): void {
 
 speakMessage()
 
-function displayNextSpeakSpeechTime (): number {
+function getNextSpeakSpeechTime (): number {
   return nextSpeechDate.getTime() - Date.now()
 }
 
@@ -763,9 +763,9 @@ function renderMessageQueue (): void {
     <p><span>Click on a message to delete it from queue!</span>
       <br><span>${typeof currentlySpeaking === 'undefined' && messagesToRead.length === 0
         ? 'Waiting for more messages...'
-        : displayNextSpeakSpeechTime() < 0.1
-          ? `TTS elapsed time, ~${(Math.abs(displayNextSpeakSpeechTime()) / 1000).toFixed(2)} seconds...`
-          : `Next message in ~${(displayNextSpeakSpeechTime() / 1000).toFixed(2)} seconds...`}<span>
+        : getNextSpeakSpeechTime() < 0.1
+          ? `TTS elapsed time, ~${(Math.abs(getNextSpeakSpeechTime()) / 1000).toFixed(2)} seconds...`
+          : `Next message in ~${(getNextSpeakSpeechTime() / 1000).toFixed(2)} seconds...`}<span>
     </p>
     <hr>
     ${messagesArr.length > 0 ? messagesArr.map((message) => html`
@@ -773,7 +773,7 @@ function renderMessageQueue (): void {
         deleteMessage({ targetMessageID: this.dataset.messageid as string })
       }}">
         <span>By <strong>${message.username}</strong></span>
-        <br><span><strong>Text to read out:</strong> ${message.text}</span>
+        <br><span class="break-word"><strong>Text to read out:</strong> ${message.text}</span>
         <br><span><strong>Details:</strong> Volume: ${message.volume}, Pitch: ${message.pitch}, Rate: ${message.rate}, Synthesizer: ${message.voice.name}</span>
       </div>
     `) : undefined}
