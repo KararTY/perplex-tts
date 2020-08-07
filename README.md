@@ -24,6 +24,19 @@ Plays messages, written in the specified channel with a specific prefix, with a 
   * Adding `pitch:0` to `pitch:2` will change the pitch of the synthesizer. Input: Double value from 0, 0.1, etc... to a maximum value of 2.
   * Adding `volume:0` to `volume:<user-defined>` will change the volume of the TTS. Input: Double value from 0, 0.1, 0.2 etc... to a maximum value of whatever the value is set in your settings.
 
+**These values can be combo'd, like so:**
+```
+!tts lang:ja-jp Haruka is maybe my sister, she sounds just like me.
+lang:ja-jp-4 You are not my sister, we are not related.
+lang:ja-jp-3 Relax, relax. It's just a big misunderstanding.
+lang:ja-jp-2 volume:0.5 Please be quiet, I'm trying to play video games.
+lang:es-mx volume:1 I can fix it, I'm the Mexican, two time back to back relationship fixer.
+rate:2 yayayayayayayayayayayayaya
+rate:1 My name is
+rate:2 volume:0.5 Rauuuuuuuuuuuuuuuuuuu
+volume:1 uuuuuuuuuuuuuuuuuuuuuuuuuuuuuul.
+```
+
 ### How to get more TTS voices
   * Install TTS voices via Windows 10 settings:
     <p align="center">
