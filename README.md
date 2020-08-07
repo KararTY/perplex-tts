@@ -20,16 +20,18 @@ Plays messages, written in the specified channel with a specific prefix, with a 
 
 ### How to use it
   * Adding `lang:xx-xx` before the text will change which language and/or synthesizer it will use.
-  * Adding `rate:0.5` to `rate:2` will change how fast it reads a message. Input: Float value from 0.5, 0.6, etc... to a maximum value of 2.
-  * Adding `pitch:0` to `pitch:2` will change the pitch of the synthesizer. Input: Float value from 0, 0.1, etc... to a maximum value of 2.
+  * Adding `rate:0.5` to `rate:2` will change how fast it reads a message. Input: Double value from 0.5, 0.6, etc... to a maximum value of 2.
+  * Adding `pitch:0` to `pitch:2` will change the pitch of the synthesizer. Input: Double value from 0, 0.1, etc... to a maximum value of 2.
+  * Adding `volume:0` to `volume:<user-defined>` will change the volume of the TTS. Input: Double value from 0, 0.1, 0.2 etc... to a maximum value of whatever the value is set in your settings.
 
 ### How to get more TTS voices
   * Install TTS voices via Windows 10 settings:
     <p align="center">
       <img src="./Language_Settings.png"/>
-      <br>Make sure they have the "Text-To-Speech" icon that looks like this 👉 <img src="TTS_Icon.png"/> before installing them. <strong>Also, you may be required to restart your PC after installing new languages.</strong>
+      <br>Make sure they have the "Text-To-Speech" icon that looks like this 👉 <img src="TTS_Icon.png"/> before installing them. <strong>Also, you may be required to restart your PC after installing new languages. Most of those TTSes have multiple voices but only 1 comes enabled by default. <a href="https://www.ghacks.net/2018/08/11/unlock-all-windows-10-tts-voices-system-wide-to-get-more-of-them/">There are ways of enabling the rest of them, but I don't recommend trying it out unless you know how to work the registry editor.</a></strong>
     </p>
-  * Other ways of getting TTS: Not sure. Maybe you know of some?
+  * espeak-ng seems to work, but not sure how to modify the default voice or add new ones. Pull request if you have a fix, solution or suggestion.
+  * Other ways of getting TTS: Not sure. Maybe you know of some? Create new issue or make a pull request.
 
 ### How to build it yourself
   1. Make sure you have NodeJS (Latest LTS works).
