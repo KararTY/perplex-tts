@@ -690,8 +690,6 @@ function onSynthesisUtteranceEnd (ev?: SpeechSynthesisEvent | SpeechSynthesisErr
 
   // ev.elapsedTime
 
-  synth.cancel()
-
   if (messagesToRead.length > 0 && messagesToRead[0].sameMessage) {
     setTimeout(() => {
       speakMessage()
@@ -710,6 +708,8 @@ function onSynthesisUtteranceError (ev?: SpeechSynthesisErrorEvent): void {
   if (typeof ev !== 'undefined') {
     console.error('SpeechSynthesisUtterance.onerror', ev)
   }
+
+  synth.cancel()
 
   clearInterval(killInterval)
 
