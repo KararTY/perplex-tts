@@ -601,7 +601,6 @@ function parseMessage (msg: PrivmsgMessage | UsernoticeMessage): void {
     if (filteredMessages.length > 0) {
       messagesToRead.push(...filteredMessages)
       currentDelay = new Date(Date.now() + (currentSettings.delay * 1000))
-      renderMessageQueue()
     }
   } catch (error) {
     console.error(error)
@@ -634,8 +633,6 @@ function deleteMessage (msg: ClearmsgMessage | ClearchatMessage | { targetMessag
       messagesToRead = []
     }
   }
-
-  renderMessageQueue()
 }
 
 function addGreenBorder (): void {
@@ -654,10 +651,25 @@ function removeGreenBorder (): void {
   }
 }
 
+function calculateNextSpeakSpeechDate (): Date {
+  let waitDate = new Date()
+  let cooldownDate = new Date(Date.now() + currentSettings.cooldown * 1000)
+
+  if (typeof cooldownDate === 'undefined' || (Date.now() > cooldownDate.getTime())) {
+    cooldownDate = new Date(Date.now() + currentSettings.cooldown * 1000)
+  }
+
+  if (typeof messagesToRead[0] !== 'undefined') {
+    waitDate = messagesToRead[0].waitUntil
+  }
+
+  return waitDate.getTime() > cooldownDate.getTime() ? waitDate : cooldownDate
+}
+
 let currentlySpeaking: Message | undefined
 let killInterval: NodeJS.Timeout
+let nextSpeechDate: Date
 function speakMessage (): void {
-  renderMessageQueue()
   if (messagesToRead.length > 0 && !synth.speaking && Date.now() > messagesToRead[0].waitUntil.getTime()) {
     const message = messagesToRead.shift() as Message
 
@@ -678,7 +690,10 @@ function speakMessage (): void {
         } else {
           setTimeout(() => {
             speakMessage()
-          }, currentSettings.cooldown * 1000)
+          }, (() => {
+            nextSpeechDate = calculateNextSpeakSpeechDate()
+            return nextSpeechDate.getTime() - Date.now()
+          })())
         }
       })
 
@@ -718,17 +733,30 @@ function speakMessage (): void {
   } else {
     setTimeout(() => {
       speakMessage()
-    }, Math.max(typeof messagesToRead[0] !== 'undefined' ? (Date.now() - messagesToRead[0].waitUntil.getTime()) : 0, currentSettings.cooldown * 1000))
+    }, (() => {
+      nextSpeechDate = calculateNextSpeakSpeechDate()
+      return nextSpeechDate.getTime() - Date.now()
+    })())
   }
 }
 
 speakMessage()
 
+function displayNextSpeakSpeechTime (): number {
+  return nextSpeechDate.getTime() - Date.now()
+}
+
 function renderMessageQueue (): void {
   const messagesArr = [currentlySpeaking, ...messagesToRead].filter(Boolean) as Message[]
 
   render((document.getElementById('messages') as HTMLDivElement).querySelector('.card-content') as HTMLDivElement, html`
-    <p>Click on a message to delete it from queue!</p>
+    <p><span>Click on a message to delete it from queue!</span>
+      <br><span>${typeof currentlySpeaking === 'undefined' && messagesToRead.length === 0
+        ? 'Waiting for more messages...'
+        : displayNextSpeakSpeechTime() < 0.1
+          ? `TTS elapsed time, ~${(Math.abs(displayNextSpeakSpeechTime()) / 1000).toFixed(2)} seconds...`
+          : `Next message in ~${(displayNextSpeakSpeechTime() / 1000).toFixed(2)} seconds...`}<span>
+    </p>
     <hr>
     ${messagesArr.length > 0 ? messagesArr.map((message) => html`
       <div class="box" data-messageid="${message.messageID}" onclick="${function clickedOnMessageBox (this: HTMLDivElement) {
@@ -741,6 +769,8 @@ function renderMessageQueue (): void {
     `) : undefined}
   `)
 }
+
+setInterval(() => renderMessageQueue())
 
 client.on('372', (msg) => console.log(`Twitch IRC: ${msg.ircParameters.join(' ')}`))
 client.on('ready', () => console.log('Successfully connected to Twitch IRC.'))
