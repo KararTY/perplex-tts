@@ -679,6 +679,43 @@ function calculateNextSpeakSpeechDate (): Date {
   return waitDate.getTime() > cooldownDate.getTime() ? waitDate : cooldownDate
 }
 
+function onSynthesisUtteranceEnd (ev?: SpeechSynthesisEvent | SpeechSynthesisErrorEvent): void {
+  if (typeof ev !== 'undefined' && ev instanceof SpeechSynthesisEvent) {
+    console.log('SpeechSynthesisUtterance.onend', ev)
+  }
+
+  removeGreenBorder()
+
+  currentlySpeaking = undefined
+
+  // ev.elapsedTime
+
+  synth.cancel()
+
+  if (messagesToRead.length > 0 && messagesToRead[0].sameMessage) {
+    setTimeout(() => {
+      speakMessage()
+    })
+  } else {
+    setTimeout(() => {
+      speakMessage()
+    }, (() => {
+      nextSpeechDate = calculateNextSpeakSpeechDate()
+      return nextSpeechDate.getTime() - Date.now()
+    })())
+  }
+}
+
+function onSynthesisUtteranceError (ev?: SpeechSynthesisErrorEvent): void {
+  if (typeof ev !== 'undefined') {
+    console.error('SpeechSynthesisUtterance.onerror', ev)
+  }
+
+  clearInterval(killInterval)
+
+  onSynthesisUtteranceEnd(ev)
+}
+
 let currentlySpeaking: Message | undefined
 let killInterval: NodeJS.Timeout
 let nextSpeechDate: Date
@@ -691,28 +728,9 @@ function speakMessage (): void {
 
       currentlySpeaking = message
 
-      utterance.addEventListener('end', (ev) => {
-        console.log('SpeechSynthesisUtterance.onend', ev)
-        removeGreenBorder()
-        currentlySpeaking = undefined
-        // ev.elapsedTime
-        if (messagesToRead.length > 0 && messagesToRead[0].sameMessage) {
-          setTimeout(() => {
-            speakMessage()
-          })
-        } else {
-          setTimeout(() => {
-            speakMessage()
-          }, (() => {
-            nextSpeechDate = calculateNextSpeakSpeechDate()
-            return nextSpeechDate.getTime() - Date.now()
-          })())
-        }
-      })
+      utterance.addEventListener('end', onSynthesisUtteranceEnd)
 
-      utterance.addEventListener('error', (ev) => {
-        console.error('SpeechSynthesisUtterance.onerror', ev)
-      })
+      utterance.addEventListener('error', onSynthesisUtteranceError)
 
       utterance.voice = message.voice
       utterance.pitch = message.pitch
@@ -734,8 +752,7 @@ function speakMessage (): void {
         }
 
         if ((Date.now() - currentlySpeaking.startedAt.getTime()) > 30000) {
-          clearInterval(killInterval)
-          synth.cancel()
+          onSynthesisUtteranceError()
         }
       }, 1000)
     } else {
