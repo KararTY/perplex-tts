@@ -381,9 +381,20 @@ function saveSettings (data: MouseEvent | Settings): void {
   let settingsToSave: Settings | undefined
 
   if (data instanceof MouseEvent) {
+    const bits = (document.getElementById('bits') as HTMLInputElement).valueAsNumber
+    const vol = (document.getElementById('volume') as HTMLInputElement).valueAsNumber
+    const cooldown = (document.getElementById('cooldown') as HTMLInputElement).valueAsNumber
+    const delay = (document.getElementById('delay') as HTMLInputElement).valueAsNumber
+    const wait = (document.getElementById('wait') as HTMLInputElement).valueAsNumber
+    const channel = (document.getElementById('channel') as HTMLInputElement).value
+
     settingsToSave = {
-      volume: (document.getElementById('volume') as HTMLInputElement).valueAsNumber,
-      channel: (document.getElementById('channel') as HTMLInputElement).value,
+      volume: isNaN(vol) ? 0 : vol,
+      cooldown: isNaN(cooldown) ? 0 : cooldown,
+      delay: isNaN(delay) ? 0 : delay,
+      wait: isNaN(wait) ? 0 : wait,
+      bits: isNaN(bits) ? 0 : bits,
+      channel: channel.length === 0 ? 'notkarar' : channel,
       prefix: (document.getElementById('prefix') as HTMLInputElement).value,
       channelPointsId: (document.getElementById('channelpointsid') as HTMLInputElement).value,
       allow: [
@@ -392,16 +403,12 @@ function saveSettings (data: MouseEvent | Settings): void {
         document.getElementById('allow' + AllowTypes.MODS) as HTMLInputElement,
         document.getElementById('allow' + AllowTypes.TIERONE) as HTMLInputElement
       ].filter((checkbox: HTMLInputElement) => checkbox.checked).map((checkbox: HTMLInputElement) => checkbox.value as AllowTypes),
-      bits: (document.getElementById('bits') as HTMLInputElement).valueAsNumber,
       automod: {
         identity: (document.getElementById('automodidentity') as HTMLInputElement).checked,
         sexual: (document.getElementById('automodsexual') as HTMLInputElement).checked,
         aggressive: (document.getElementById('automodaggressive') as HTMLInputElement).checked,
         profanity: (document.getElementById('automodprofanity') as HTMLInputElement).checked
       },
-      cooldown: (document.getElementById('cooldown') as HTMLInputElement).valueAsNumber,
-      delay: (document.getElementById('delay') as HTMLInputElement).valueAsNumber,
-      wait: (document.getElementById('wait') as HTMLInputElement).valueAsNumber,
       langName: ((document.getElementById('voices') as HTMLInputElement).querySelector('.is-success[data-langname]') as HTMLAnchorElement).dataset.langname as string
     }
   } else if (typeof data.channel !== 'undefined') {
