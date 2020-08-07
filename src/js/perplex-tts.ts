@@ -68,26 +68,33 @@ function checkForVoices (): void {
 
   if (synth.getVoices().length === 0) {
     checks++
+
     if (checks < 100) {
       setTimeout(() => {
         checkForVoices()
       }, 50)
     } else {
-      const node = html.node`
-        <p class="help is-danger" id="savebuttonhelp">
-          <span>There's been an error loading / saving your settings! Check the console logs for more information.</span>
-          <span>If you think it's a bug, report it on <a href="https://www.github.com/kararty/perplex-tts">Github</a>!</span>
-        </p>
-      `
-      node.setAttribute('class', 'is-size-4 has-text-danger')
-      ;((document.getElementById('settings') as HTMLDivElement).querySelector('.card-content') as HTMLDivElement).prepend(node)
+      if (document.getElementById('errorinloading') === null) {
+        const node = html.node`
+          <p class="is-size-4 has-text-danger" id="errorinloading">
+            <span>There's been an error loading / saving your settings! Check the console logs for more information.</span>
+            <span>If you think it's a bug, report it on <a href="https://www.github.com/kararty/perplex-tts" target="_blank">Github</a>!</span>
+          </p>
+        `
+
+        node.setAttribute('class', 'is-size-4 has-text-danger')
+
+        ;((document.getElementById('settings') as HTMLDivElement).querySelector('.card-content') as HTMLDivElement).prepend(node)
+      }
     }
+
     return
   }
 
   if (!voicesLoaded) {
     availableVoices = synth.getVoices().sort(a => (a.lang === 'en-GB' && a.name.startsWith('Microsoft')) ? -1 : 1).sort(x => x.default ? -1 : 1).map((voice, index, arr) => {
       const duplicateLangsBefore = arr.slice(0, index).filter((v) => v.lang === voice.lang).length
+
       return {
         default: index === 0,
         lang: duplicateLangsBefore > 0 ? `${voice.lang.toLowerCase()}-${duplicateLangsBefore + 1}` : voice.lang.toLowerCase(),
@@ -98,10 +105,6 @@ function checkForVoices (): void {
 
   voicesLoaded = true
 }
-
-setTimeout(() => {
-  checkForVoices()
-})
 
 let hasClicked = false
 render(document.getElementById('enabletts') as HTMLDivElement, html`
@@ -216,7 +219,7 @@ function renderSettings (): void {
             </label>
           </div>
         </div>
-        <p class="help">Censor words as outlined by <a href="https://help.twitch.tv/s/article/how-to-use-automod">Twitch's Automod</a> feature. <strong>Note: This isn't completely reliable.</strong></p>
+        <p class="help">Censor words as outlined by <a href="https://help.twitch.tv/s/article/how-to-use-automod" target="_blank">Twitch's Automod</a> feature. <strong>Note: This isn't completely reliable.</strong></p>
       </div>
     </div>
     <div class="field">
@@ -368,7 +371,7 @@ function loadSettings (): void {
     const node = html.node`
       <p class="help is-danger" id="savebuttonhelp">
         <span>There's been an error loading / saving your settings! Check the console logs for more information.</span>
-        <span>If you think it's a bug, report it on <a href="https://www.github.com/kararty/perplex-tts">Github</a>!</span>
+        <span>If you think it's a bug, report it on <a href="https://www.github.com/kararty/perplex-tts" target="_blank">Github</a>!</span>
       </p>
     `
     if (btnEl !== null) {
@@ -750,8 +753,6 @@ function speakMessage (): void {
   }
 }
 
-speakMessage()
-
 function getNextSpeakSpeechTime (): number {
   return nextSpeechDate.getTime() - Date.now()
 }
@@ -779,8 +780,6 @@ function renderMessageQueue (): void {
     `) : undefined}
   `)
 }
-
-setInterval(() => renderMessageQueue())
 
 let killClientCounter: number = 0
 let client: ChatClient | undefined
@@ -819,23 +818,48 @@ function addEventListeners (): void {
   client.connect()
 }
 
-setInterval(() => {
-  if (typeof client !== 'undefined') {
-    if (client.joinedChannels.size === 0) {
-      killClientCounter++
+if (typeof speechSynthesis !== 'undefined') {
+  // Start the timer for allowing the TTSes to be loaded by the browser.
+  setTimeout(() => {
+    checkForVoices()
+  })
 
-      if (killClientCounter > 4) {
-        render(((document.getElementById('settings') as HTMLDivElement).querySelector('.card-content') as HTMLDivElement), html`
+  // Start the timer for speaking messages.
+  speakMessage()
+
+  // Start the interval for rendering the queue.
+  setInterval(() => renderMessageQueue())
+
+  // Start the interval for initial connection && auto-reconnection to Twitch.
+  setInterval(() => {
+    if (typeof client !== 'undefined') {
+      if (client.joinedChannels.size === 0) {
+        killClientCounter++
+
+        if (killClientCounter > 4) {
+          render(((document.getElementById('settings') as HTMLDivElement).querySelector('.card-content') as HTMLDivElement), html`
           <p>Attempting to reconnect to Twitch chat in ${10 - killClientCounter} seconds...</p>
         `)
-      }
+        }
 
-      if (killClientCounter > 9) {
+        if (killClientCounter > 9) {
         // Attempt reconnection.
-        addEventListeners()
+          addEventListeners()
+        }
       }
+    } else {
+      addEventListeners()
     }
-  } else {
-    addEventListeners()
-  }
-}, 1000)
+  }, 1000)
+} else {
+  const node = html.node`
+    <p class="is-size-4 has-text-danger" id="notts">
+      <span><a href="https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis" target="_blank">SpeechSynthesis API</a> is not supported by this browser!</span>
+      <br><span>If you think it's a bug, report it on <a href="https://www.github.com/kararty/perplex-tts" target="_blank">Github</a>!</span>
+    </p>
+  `
+
+  node.setAttribute('class', 'is-size-4 has-text-danger')
+
+  ;((document.getElementById('settings') as HTMLDivElement).querySelector('.card-content') as HTMLDivElement).prepend(node)
+}
