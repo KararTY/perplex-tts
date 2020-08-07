@@ -751,7 +751,7 @@ function speakMessage (): void {
           return
         }
 
-        if ((Date.now() - currentlySpeaking.startedAt.getTime()) > 30000) {
+        if ((Date.now() - currentlySpeaking.startedAt.getTime()) > 29000) {
           onSynthesisUtteranceError()
         }
       }, 1000)
