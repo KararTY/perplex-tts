@@ -444,7 +444,11 @@ function parseMessage (msg: PrivmsgMessage | UsernoticeMessage): void {
       return
     }
 
-    let messageText = msg.messageText as string
+    let messageText = msg instanceof UsernoticeMessage ? (msg.messageText ?? msg.systemMessage) : msg.messageText
+
+    if (messageText.length === 0) {
+      return
+    }
 
     // Logic to see if message should be read out.
     let allow = true
