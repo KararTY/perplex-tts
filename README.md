@@ -4,7 +4,7 @@
 
 [Check MDN for browser compatibility.](https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis#Browser_compatibility)
 
-**Note: Unfortunately this does NOT work in OBS's "Browser Source", as CEF (The Chromium engine) doesn't come with the required speech functionalities.**
+**Note: This works as a browser source on OBS version 27.2 and above.**
 
 ### What it does
 Plays messages, written in the specified channel with a specific prefix, with a TTS.
@@ -67,4 +67,4 @@ volume:1 uuuuuuuuuuuuuuuuuuuuuuuuuuuuuul.
 
 ### Ideas for the future
   * Not requiring the user to click on the big red button to make it work.
-  * Make it work in OBS.
+  * Got more ideas? Open up an issue!
